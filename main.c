@@ -36,24 +36,52 @@ enum serial_cmd{
 char menu();
 
 int init_serial(struct serial *dev);
-void send_burst(struct serial *dev,struct mem_cmd *mem);
-void send_byte(struct serial *dev,struct mem_cmd *mem);
-void read_byte(struct serial *dev,struct mem_cmd *mem);
-void read_burst(struct serial *dev,struct mem_cmd *mem);
+int send_burst(struct serial *dev,struct mem_cmd *mem);
+int send_byte(struct serial *dev,struct mem_cmd *mem);
+int read_byte(struct serial *dev,struct mem_cmd *mem);
+int read_burst(struct serial *dev,struct mem_cmd *mem);
 
 
 int main(){
 
 	struct serial dev;
+	struct mem_cmd mem;
 	int err;
+	char cmd;
+	mem.add = {0x00,0x00,0x00,0x00};
+	mem.data = "This is a test string I want to send to test my uart to mem function. \n";
+	mem.size = sizeof(mem.data);
 	dev.name = "/dev/tty/AMA0";
 	dev.baud = 115200;
 	err = init_serial(dev);
-	if(err>0)
+	while(1)
 	{
-		return err;
-	}
+		if(err>0)
+		{
+			return err;
+		}
+		cmd = menu();
 
+		switch(cmd)
+		{
+
+			case '1':
+			err =send_byte(dev,mem);
+			break;
+			case '2':
+			err=send_burst(dev,mem);
+			break;
+			case '3':
+			err=read_byte(dev,mem);
+			break;
+			case '4':
+			err=read_burst(dev,mem);
+			break;
+			default:
+			printf("%c : Command not found",cmd);
+
+		}
+	}
 	return err;
 }
 //menu
@@ -66,8 +94,8 @@ char menu(){
 	printf(" 4: Read Burst \n");
 	printf(" CMD: "
 
- while(( ch = getchar() ) != EOF );
-
+ 	while(( ch = getchar() ) != EOF );
+	return ch;
 }
 //used to start the serial
 int init_serial(struct serial *dev){
@@ -114,10 +142,23 @@ int send_burst(struct serial *dev,struct mem_cmd *mem){
 	serialPuts(dev->fd, mem->data);
 }
 //sends out a byte
-void send_byte(struct *serial,struct *mem_cmd){
+int send_byte(struct *serial,struct *mem_cmd){
+	char ch;
+	int trys;
+        serialPutchar(dev->fd,(char) WIRTE_BYTE);
+                while(!serialDataAvail(dev->fd))
+        {
+                try ++;
+                if(trys==5)
+                {
+                        return -1;
+                }
 
-        serialPutchar(dev->fd,(char) WIRTE_BURST);
-        serialPutchar(dev->fd,mem->add[0]);
+                sleep(1);
+        }
+        ch = serialGetchar(dev->fd);
+        printf("%c /n", ch);
+	serialPutchar(dev->fd,mem->add[0]);
         serialPutchar(dev->fd,mem->add[1]);
         serialPutchar(dev->fd,mem->add[2]);
         serialPutchar(dev->fd,mem->add[3]);
@@ -129,22 +170,83 @@ void send_byte(struct *serial,struct *mem_cmd){
 	seialPutchar(dev->fd,mem->data[0]);
 }
 //sends out a byte
-void read_byte(struct *serial,struct *mem_cmd){
-        serialPutchar(dev->fd,(char) WIRTE_BURST);
+int read_byte(struct *serial,struct *mem_cmd){
+
+	char ch;
+ 	int trys;
+	serialPutchar(dev->fd,(char) READ_BYTE);
+        while(!serialDataAvail(dev->fd))
+        {
+                trys ++;
+                if(trys==5)
+                {
+                        return -1;
+                }
+
+                sleep(1);
+        }
+	trys =0;
+        ch = serialGetchar(dev->fd);
+        printf("%c /n", ch);
         serialPutchar(dev->fd,mem->add[0]);
         serialPutchar(dev->fd,mem->add[1]);
         serialPutchar(dev->fd,mem->add[2]);
         serialPutchar(dev->fd,mem->add[3]);
+	while(!serialDataAvail(dev->fd)
+	{
+		trys++
+		if(trys==5)
+		{
+			return -1
+		}
+		sleep(1);
+	}
+	ch = serialGetchar(dev->fd);
+	mem->data[0] = ch;
+	printf("%c /n",ch);
+	return 0;
+
 
 }
 //sends out a byte
-void read_burst(struct *serial,struct *mem_cmd){
+int read_burst(struct *serial,struct *mem_cmd){
 
-	serialPutchar(dev->fd,(char) WIRTE_BURST);
+	serialPutchar(dev->fd,(char) READ_BURST);
+        while(!serialDataAvail(dev->fd))
+        {
+                try ++;
+                if(trys==5)
+                {
+                        return -1;
+                }
+
+                sleep(1);
+        }
+        ch = serialGetchar(dev->fd);
+        printf("%c /n", ch);
+
         serialPutchar(dev->fd,mem->add[0]);
         serialPutchar(dev->fd,mem->add[1]);
         serialPutchar(dev->fd,mem->add[2]);
         serialPutchar(dev->fd,mem->add[3]);
+	for(int i=0; i < mem->size; i++)
+	{
+		trys =0;
+		while(!serialDataAvail(dev->fd))
+		{
+			try ++;
+        	        if(trys==5)
+	                {
+                	        return -1;
+               		}
 
+              		sleep(1);
+		}
+
+		ch = serialGetchar(dev->fd);
+       		mem->data[i] = ch;
+        	printf("%c",ch);
+
+	}
+	return 0;
 }
-
