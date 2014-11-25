@@ -10,6 +10,7 @@
 #include <wiringPiI2C.h>
 #include <wiringSerial.h>
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -22,7 +23,7 @@ char  *name;
 };
 struct mem_cmd{
  char add[4];
- char *data
+ char *data;
  int size;
 };
 
@@ -41,6 +42,12 @@ int send_byte(struct serial *dev,struct mem_cmd *mem);
 int read_byte(struct serial *dev,struct mem_cmd *mem);
 int read_burst(struct serial *dev,struct mem_cmd *mem);
 
+void my_interrupt(void)
+{
+	printf("the button worked");
+
+}
+
 
 int main(){
 
@@ -48,12 +55,17 @@ int main(){
 	struct mem_cmd mem;
 	int err;
 	char cmd;
-	mem.add = {0x00,0x00,0x00,0x00};
+	wiringPiSetup();
+
+	mem.add[0] = 0x00;
+	mem.add[1] = 0x00;
+	mem.add[2] = 0x00;
+	mem.add[3] = 0x00;
 	mem.data = "This is a test string I want to send to test my uart to mem function. \n";
 	mem.size = sizeof(mem.data);
 	dev.name = "/dev/tty/AMA0";
 	dev.baud = 115200;
-	err = init_serial(dev);
+	err = init_serial(&dev);
 	while(1)
 	{
 		if(err>0)
@@ -66,16 +78,16 @@ int main(){
 		{
 
 			case '1':
-			err =send_byte(dev,mem);
+			err =send_byte(&dev,&mem);
 			break;
 			case '2':
-			err=send_burst(dev,mem);
+			err=send_burst(&dev,&mem);
 			break;
 			case '3':
-			err=read_byte(dev,mem);
+			err=read_byte(&dev,&mem);
 			break;
 			case '4':
-			err=read_burst(dev,mem);
+			err=read_burst(&dev,&mem);
 			break;
 			default:
 			printf("%c : Command not found",cmd);
@@ -92,7 +104,7 @@ char menu(){
 	printf(" 2: Send Burst \n");
 	printf(" 3: Read Byte  \n");
 	printf(" 4: Read Burst \n");
-	printf(" CMD: "
+	printf(" CMD: ");
 
  	while(( ch = getchar() ) != EOF );
 	return ch;
@@ -100,7 +112,7 @@ char menu(){
 //used to start the serial
 int init_serial(struct serial *dev){
 
-	if ((dev.fd = serialOpen (dev.name, dev.baud)) < 0)
+	if ((dev->fd = serialOpen (dev->name, dev->baud)) < 0)
   	{
     		fprintf (stderr, "Unable to open serial device: %s\n", strerror (errno)) ;
     		return 1 ;
@@ -113,11 +125,11 @@ int send_burst(struct serial *dev,struct mem_cmd *mem){
 
 	char ch;
 	int trys = 0;
-	serialPutchar(dev->fd,(char) WIRTE_BURST);
+	serialPutchar(dev->fd,(char) WRITE_BURST);
 
 	while(!serialDataAvail(dev->fd))
         {
-		try ++;
+		trys ++;
 		if(trys==5)
 		{
 		 	return -1;
@@ -142,13 +154,13 @@ int send_burst(struct serial *dev,struct mem_cmd *mem){
 	serialPuts(dev->fd, mem->data);
 }
 //sends out a byte
-int send_byte(struct *serial,struct *mem_cmd){
+int send_byte(struct serial *dev,struct mem_cmd *mem){
 	char ch;
 	int trys;
-        serialPutchar(dev->fd,(char) WIRTE_BYTE);
-                while(!serialDataAvail(dev->fd))
+        serialPutchar(dev->fd,(char) WRITE_BYTE);
+        while(!serialDataAvail(dev->fd))
         {
-                try ++;
+                trys ++;
                 if(trys==5)
                 {
                         return -1;
@@ -167,10 +179,10 @@ int send_byte(struct *serial,struct *mem_cmd){
                 ch = serialGetchar(dev->fd);
                 printf("%c /n", ch);
         }
-	seialPutchar(dev->fd,mem->data[0]);
+	serialPutchar(dev->fd,mem->data[0]);
 }
 //sends out a byte
-int read_byte(struct *serial,struct *mem_cmd){
+int read_byte(struct serial *dev,struct mem_cmd *mem){
 
 	char ch;
  	int trys;
@@ -192,12 +204,12 @@ int read_byte(struct *serial,struct *mem_cmd){
         serialPutchar(dev->fd,mem->add[1]);
         serialPutchar(dev->fd,mem->add[2]);
         serialPutchar(dev->fd,mem->add[3]);
-	while(!serialDataAvail(dev->fd)
+	while(!serialDataAvail(dev->fd))
 	{
-		trys++
+		trys++;
 		if(trys==5)
 		{
-			return -1
+			return -1;
 		}
 		sleep(1);
 	}
@@ -209,12 +221,15 @@ int read_byte(struct *serial,struct *mem_cmd){
 
 }
 //sends out a byte
-int read_burst(struct *serial,struct *mem_cmd){
+int read_burst(struct serial *dev,struct mem_cmd *mem){
 
+	int i;
+	int trys;
+	char ch;
 	serialPutchar(dev->fd,(char) READ_BURST);
         while(!serialDataAvail(dev->fd))
         {
-                try ++;
+                trys ++;
                 if(trys==5)
                 {
                         return -1;
@@ -229,12 +244,12 @@ int read_burst(struct *serial,struct *mem_cmd){
         serialPutchar(dev->fd,mem->add[1]);
         serialPutchar(dev->fd,mem->add[2]);
         serialPutchar(dev->fd,mem->add[3]);
-	for(int i=0; i < mem->size; i++)
+	for( i=0; i < mem->size; i++)
 	{
 		trys =0;
 		while(!serialDataAvail(dev->fd))
 		{
-			try ++;
+			trys ++;
         	        if(trys==5)
 	                {
                 	        return -1;
