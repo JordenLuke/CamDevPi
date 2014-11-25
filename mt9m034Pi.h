@@ -1,3 +1,9 @@
+/*
+*Compile info: gcc -c mt9m034Pi.c -lwiringPi -lpthread -lm
+*
+*
+*/
+
 #ifndef MT9M034PI_H
 #define MT9M034PI_H
 

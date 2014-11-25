@@ -1,14 +1,25 @@
+/*
+* Complie :gcc -o testcam  testcam.c mt9m034Pi.c -lwiringPi -lpthread -lm
+*
+*
+*/
 #include <wiringPi.h>
+#include "mt9m034Pi.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+
 
 #define START 4
 #define SNAP  5
 #define RESET 1
 #define DONE  6
 
+void myInterrupt();
 int gpio_setup();
-void myInterupt();
+
+struct mt9m034_data *mt9m034;
 
 int main(void)
 {
@@ -42,14 +53,17 @@ int gpio_setup()
     		fprintf (stderr, "Unable to setup ISR: %s\n", strerror (errno)) ;
     		return 1 ;
   	}
-
+	if(mt9m034_init(mt9m034, RESET)  < 0 )
+	{
+		fprintf (stderr, "Unable to setup ISR: %s\n", strerror (errno)) ;
+	}
 	pinMode(START,INPUT);
 	pinMode(SNAP,INPUT);
 	pullUpDnControl (START,PUD_UP);
 	pullUpDnControl (SNAP,PUD_UP);
 	return 1;
 }
-void myInterupt()
+void myInterrupt()
 {
 
 	printf("Picture Captured \n");

@@ -1,5 +1,6 @@
 #include<wiringPi.h>
 #include<wiringPiI2C.h>
+
 #define MT9M034_PIXEL_ARRAY_WIDTH	1280
 #define MT9M034_PIXEL_ARRAY_HEIGHT	960
 
@@ -214,7 +215,7 @@ int pin_mode(struct pin *p, int mode)
 
 	return 0;
 }
-int pin_wirte(struct pin *p, int value)
+int pin_write(struct pin *p, int value)
 {
 	if(p->mode == OUTPUT)
 	{
@@ -269,7 +270,7 @@ static int mt9m034_sequencer_settings(struct mt9m034_data *mt9m034)
 
 	MT9M034_WRITE(ret, mt9m034->fd, MT9M034_SEQ_CTRL_PORT, 0x8000)
 
-	for(i = 0; i < ARRAY_SIZE(mt9m034_seq_data); i++){
+	for(i = 0; i < sizeof(mt9m034_seq_data); i++){
 		MT9M034_WRITE(ret, mt9m034->fd, MT9M034_SEQ_DATA_PORT, mt9m034_seq_data[i])
 	}
 
