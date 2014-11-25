@@ -155,10 +155,10 @@ struct pin{
 	int pin_num;
 	int mode;
 	int status;
-}
+};
 struct mt9m034_data{
 	struct mt9m034_pll_divs *pll;
-	struct pin reset;
+	struct pin *reset;
 	int fd;
 	int version;
 };
@@ -236,9 +236,9 @@ int pin_read(struct pin *p)
  * @addr: address of the register which is to be read
  *
  */
-static int mt9m034_read(mt9m034_data *mt9m034, u16 addr)
+static int mt9m034_read(int fd, u16 addr)
 {
-	return wiringPiI2CWriteReg16(mt9m034->fd, (int) addr)
+	return wiringPiI2CReadReg16(fd, (int) addr);
 }
 
 /**
@@ -248,13 +248,13 @@ static int mt9m034_read(mt9m034_data *mt9m034, u16 addr)
  * @data: data to be written into the register
  *
  */
-static int __mt9m034_write(mt9m034_data *mt9m034, u16 addr,
+static int __mt9m034_write(int fd, u16 addr,
 				u16 data)
 {
 
-
+	int ret;
 	/* i2c_transfer returns message length, but function should return 0 */
-	ret = wiringPiI2CWriteReg16(mt9m034->fd, (int) addr, (int) data);
+	ret = wiringPiI2CWriteReg16(fd, (int) addr, (int) data);
 	return ret;
 }
 
@@ -263,7 +263,7 @@ static int __mt9m034_write(mt9m034_data *mt9m034, u16 addr,
  * @client: pointer to the i2c client
  *
  */
-static int mt9m034_sequencer_settings(mt9m034_data *mt9m034)
+static int mt9m034_sequencer_settings(struct mt9m034_data *mt9m034)
 {
 	int i, ret;
 
@@ -283,7 +283,7 @@ static int mt9m034_sequencer_settings(mt9m034_data *mt9m034)
  * @fd: pointer to the i2c client
  *
  */
-static int mt9m034_linear_mode_setup(mt9m034_data *mt9m034)
+static int mt9m034_linear_mode_setup(struct mt9m034_data *mt9m034)
 {
 	int ret;
 
@@ -323,17 +323,19 @@ static int mt9m034_linear_mode_setup(mt9m034_data *mt9m034)
 
 static int mt9m034_pll_setup(struct mt9m034_data *mt9m034)
 {
-	mt9m034->pll = mt9m034_divs[0];
+	int ret;
 
-	MT9M034_WRITE(ret, mt9m034->mt9m034->fd, MT9M034_VT_SYS_CLK_DIV, mt9m034->pll->p1)
-	MT9M034_WRITE(ret, mt9m034->mt9m034->fd, MT9M034_VT_PIX_CLK_DIV, mt9m034->pll->p2)
-	MT9M034_WRITE(ret, mt9m034->mt9m034->fd, MT9M034_PRE_PLL_CLK_DIV, mt9m034->pll->n)
-	MT9M034_WRITE(ret, mt9m034->mt9m034->fd, MT9M034_PLL_MULTIPLIER, mt9m034->pll->m)
+	mt9m034->pll  = & mt9m034_divs[0];
+
+	MT9M034_WRITE(ret, mt9m034->fd, MT9M034_VT_SYS_CLK_DIV, mt9m034->pll->p1)
+	MT9M034_WRITE(ret, mt9m034->fd, MT9M034_VT_PIX_CLK_DIV, mt9m034->pll->p2)
+	MT9M034_WRITE(ret, mt9m034->fd, MT9M034_PRE_PLL_CLK_DIV, mt9m034->pll->n)
+	MT9M034_WRITE(ret, mt9m034->fd, MT9M034_PLL_MULTIPLIER, mt9m034->pll->m)
 
 	if (mt9m034->version == MT9M034_COLOR_VERSION)
-		MT9M034_WRITE(ret, mt9m034->mt9m034->fd, MT9M034_DIGITAL_TEST, 0x0000)
+		MT9M034_WRITE(ret, mt9m034->fd, MT9M034_DIGITAL_TEST, 0x0000)
 	else
-		MT9M034_WRITE(ret, mt9m034->mt9m034->fd, MT9M034_DIGITAL_TEST, 0x0080)
+		MT9M034_WRITE(ret, mt9m034->fd, MT9M034_DIGITAL_TEST, 0x0080)
 
 	delay(100);
 
@@ -387,7 +389,7 @@ void mt9m034_power_on(struct mt9m034_data *mt9m034)
 	/* Ensure RESET_BAR is low */
 	pin_write(mt9m034->reset, LOW);
 	delay(2);
-	pin_write(mt9m034->reset, high);
+	pin_write(mt9m034->reset, HIGH);
 }
 /**
 *
@@ -399,7 +401,7 @@ static int mt9m034_s_stream(struct mt9m034_data *mt9m034, int enable)
 	int ret;
 
 	if (!enable){
-		MT9M034_WRITE(ret, client, MT9M034_RESET_REG, MT9M034_STREAM_OFF)
+		MT9M034_WRITE(ret, mt9m034->fd, MT9M034_RESET_REG, MT9M034_STREAM_OFF)
 		return ret;
 	}
 
