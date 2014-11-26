@@ -1,7 +1,7 @@
 #include<wiringPi.h>
 #include<wiringPiI2C.h>
 #include<stdio.h>
-#include "mt9m034Pi.c"
+#include "mt9m034Pi.h"
 
 #define MT9M034_PIXEL_ARRAY_WIDTH	1280
 #define MT9M034_PIXEL_ARRAY_HEIGHT	960
