@@ -26,6 +26,7 @@ int main(void)
 	if( gpio_setup()  < 0)
 	{
 		printf("ERROR: Failed on gpio init \n");
+		fflush(stdout);
 		return 1;
 
 	}
@@ -44,19 +45,21 @@ int gpio_setup()
 
 	if (wiringPiSetup () < 0)
   	{
-    		fprintf (stderr, "Unable to setup wiringPi: %s\n", strerror (errno)) ;
-    		return 1 ;
+    		printf ("Unable to setup wiringPi: \n");
+    		return - 1 ;
   	}
 
   	if (wiringPiISR (DONE, INT_EDGE_FALLING, &myInterrupt) < 0)
   	{
-    		fprintf (stderr, "Unable to setup ISR: %s\n", strerror (errno)) ;
-    		return 1 ;
+   		printf ("Unable to setup ISR: \n") ;
+    		return -1 ;
   	}
 	if(mt9m034_init(mt9m034, RESET)  < 0 )
 	{
-		fprintf (stderr, "Unable to setup ISR: %s\n", strerror (errno)) ;
+		printf ("Unable to init camera:  \n") ;
+		return -1;
 	}
+
 	pinMode(START,INPUT);
 	pinMode(SNAP,INPUT);
 	pullUpDnControl (START,PUD_UP);

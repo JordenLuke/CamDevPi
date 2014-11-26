@@ -1,5 +1,7 @@
 #include<wiringPi.h>
 #include<wiringPiI2C.h>
+#include<stdio.h>
+#include "mt9m034Pi.c"
 
 #define MT9M034_PIXEL_ARRAY_WIDTH	1280
 #define MT9M034_PIXEL_ARRAY_HEIGHT	960
@@ -139,7 +141,7 @@ enum {
 	MT9M034_MONOCHROME_VERSION,
 };
 
-typedef unsigned int   u32;
+typedef unsigned long  u32;
 typedef unsigned short u16;
 typedef unsigned char  u8;
 
@@ -151,17 +153,6 @@ struct mt9m034_pll_divs {
         u16 n;
         u16 p1;
         u16 p2;
-};
-struct pin{
-	int pin_num;
-	int mode;
-	int status;
-};
-struct mt9m034_data{
-	struct mt9m034_pll_divs *pll;
-	struct pin *reset;
-	int fd;
-	int version;
 };
 static struct mt9m034_pll_divs mt9m034_divs[] = {
         /* ext_freq     target_freq     M       N       p1      p2 */
@@ -388,9 +379,9 @@ static int mt9m034_is_streaming(struct mt9m034_data *mt9m034)
 void mt9m034_power_on(struct mt9m034_data *mt9m034)
 {
 	/* Ensure RESET_BAR is low */
-	pin_write(mt9m034->reset, LOW);
+	pin_write(&mt9m034->reset, LOW);
 	delay(2);
-	pin_write(mt9m034->reset, HIGH);
+	pin_write(&mt9m034->reset, HIGH);
 }
 /**
 *
@@ -448,12 +439,15 @@ int mt9m034_init(struct mt9m034_data *mt9m034, int pin)
 {
 	int fd;
 
-	mt9m034->reset->pin_num = pin;
-	pin_mode(mt9m034->reset,OUTPUT);
+	mt9m034->reset.pin_num = 1;
+	printf("Here1 \n");
+	pin_mode(&mt9m034->reset,OUTPUT);
+
+	printf("here 2\n");
 	if ((fd = wiringPiI2CSetup (MT9M034_I2C_ADDR)) < 0)
-	return fd ;
+		return fd ;
 
 	mt9m034->fd = fd;
 
-	return 0;
+	return fd;
 }

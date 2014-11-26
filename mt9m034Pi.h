@@ -9,9 +9,15 @@
 
 
 //structed used to hold some data
+struct pin{
+        int pin_num;
+        int mode;
+        int status;
+};
+
 struct mt9m034_data{
 	struct mt9m034_pll_divs *pll;
-	struct pin *reset;
+	struct pin reset;
 	int fd;
 	int version;
 };
